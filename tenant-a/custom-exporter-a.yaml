@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prom-exporter-sa
+  namespace: tenant-a
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-metric-reader
+  namespace: tenant-a
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: prom-exporter-pod-metric-reader-binding
+  namespace: tenant-a
+subjects:
+  - kind: ServiceAccount
+    name: prom-exporter-sa
+    namespace: tenant-a
+roleRef:
+  kind: Role
+  name: pod-metric-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prom-exporter-deployment
+  namespace: tenant-a
+  labels:
+    app: prom-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prom-exporter
+  template:
+    metadata:
+      labels:
+        app: prom-exporter
+    spec:
+      serviceAccountName: prom-exporter-sa
+      containers:
+        - name: prom-exporter
+          image: docker.io/rajchaosnative/prom-exporter:v1
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SERVICES
+              value: "http://nginx-proxy-b.tenant-b:80"
+            - name: INTERVAL
+              value: "1s"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prom-exporter-service
+  namespace: tenant-a
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: prom-exporter

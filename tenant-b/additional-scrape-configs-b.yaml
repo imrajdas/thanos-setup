@@ -1,0 +1,8 @@
+apiVersion: v1
+data:
+  prometheus-additional.yaml: LSBqb2JfbmFtZTogInByb21ldGhldXMiCiAgc3RhdGljX2NvbmZpZ3M6CiAgLSB0YXJnZXRzOiBbInByb20tZXhwb3J0ZXItc2VydmljZS50ZW5hbnQtYjo4MDgwIl0=
+kind: Secret
+metadata:
+  creationTimestamp: null
+  name: additional-scrape-configs
+  namespace: tenant-b
